@@ -3,62 +3,69 @@ const packagejson = require("./package.json");
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 
-module.exports = {
-    entry: './src/index.js',
-    output: {
-        filename: 'mpegts.js',
-        path: path.resolve(__dirname, 'dist'),
-        library: 'mpegts',
-        libraryTarget: 'umd'
-    },
+module.exports = (env, argv) => {
+    const isDevelopment = argv.mode === 'development';
 
-    devtool: 'source-map',
+    return {
+        entry: './src/index.js',
+        output: {
+            filename: 'mpegts.js',
+            path: path.resolve(__dirname, 'dist'),
+            library: 'mpegts',
+            libraryTarget: 'umd',
+            devtoolModuleFilenameTemplate: isDevelopment 
+                ? 'webpack://mpegts/[resource-path]'
+                : undefined
+        },
 
-    resolve: {
-        extensions: ['.ts', '.tsx', '.js', '.json']
-    },
+        devtool: isDevelopment ? 'eval-source-map' : 'source-map',
 
-    plugins: [
-        new webpack.DefinePlugin({
-          __VERSION__: JSON.stringify(packagejson.version)
-        })
-    ],
+        resolve: {
+            extensions: ['.ts', '.tsx', '.js', '.json']
+        },
 
-    node: {
-        'fs': 'empty',
-        'path': 'empty'
-    },
-
-    optimization: {
-        minimizer: [
-            new TerserPlugin({
-                sourceMap: true
+        plugins: [
+            new webpack.DefinePlugin({
+              __VERSION__: JSON.stringify(packagejson.version)
             })
-        ]
-    },
+        ],
 
-    module: {
-        rules: [
-            {
-                test: /\.(ts|js)$/,
-                use: 'ts-loader',
-                exclude: /node-modules/
-            },
-            {
-                enforce: 'pre',
-                test: /\.js$/,
-                use: 'source-map-loader'
-            }
-        ]
-    },
+        node: {
+            'fs': 'empty',
+            'path': 'empty'
+        },
 
-    devServer: {
-        static: ['demo'],
-        proxy: {
-            '/dist': {
-                target: 'http://localhost:8080',
-                pathRewrite: {'^/dist' : ''}
+        optimization: {
+            minimizer: [
+                new TerserPlugin({
+                    sourceMap: true
+                })
+            ]
+        },
+
+        module: {
+            rules: [
+                {
+                    test: /\.(ts|js)$/,
+                    use: 'ts-loader',
+                    exclude: /node-modules/
+                },
+                {
+                    enforce: 'pre',
+                    test: /\.js$/,
+                    use: 'source-map-loader'
+                }
+            ]
+        },
+
+        devServer: {
+            static: ['demo'],
+            proxy: {
+                '/dist': {
+                    target: 'http://localhost:8080',
+                    pathRewrite: {'^/dist' : ''}
+                }
             }
         }
-    }
+    };
 };
