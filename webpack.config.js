@@ -21,11 +21,7 @@ module.exports = (env, argv) => {
         devtool: isDevelopment ? 'eval-source-map' : 'source-map',
 
         resolve: {
-            extensions: ['.ts', '.tsx', '.js', '.json'],
-            fallback: {
-                fs: false,
-                path: false
-            }
+            extensions: ['.ts', '.tsx', '.js', '.json']
         },
 
         plugins: [
@@ -55,8 +51,12 @@ module.exports = (env, argv) => {
             ]
         },
 
+        node: {
+            fs: 'empty'
+        },
+
         devServer: {
-            static: ['demo'],
+            contentBase: path.resolve(__dirname, 'demo'),
             proxy: {
                 '/dist': {
                     target: 'http://localhost:8080',
