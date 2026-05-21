@@ -83,6 +83,7 @@ class TransmuxingController {
 
         this._pendingSeekTime = null;
         this._pendingResolveSeekPoint = null;
+        this._pendingSEI = [];
 
         this._statisticsReporter = null;
     }
@@ -106,6 +107,8 @@ class TransmuxingController {
             this._remuxer.destroy();
             this._remuxer = null;
         }
+
+        this._pendingSEI = null;
 
         this._emitter.removeAllListeners();
         this._emitter = null;
@@ -474,7 +477,12 @@ class TransmuxingController {
 
     _onSEI(sei_data) {
         let timestamp_base = this._remuxer.getTimestampBase();
-        if (timestamp_base == undefined) { return; }
+        if (timestamp_base == undefined) {
+            this._pendingSEI.push(sei_data);
+            return;
+        }
+
+        this._dispatchPendingSEI(timestamp_base);
 
         if (sei_data.pts != undefined) {
             sei_data.pts -= timestamp_base;
@@ -579,6 +587,9 @@ class TransmuxingController {
             // Media segments after new-segment cross-seeking should be dropped.
             return;
         }
+
+        this._dispatchPendingSEI();
+
         this._emitter.emit(TransmuxingEvents.MEDIA_SEGMENT, type, mediaSegment);
 
         // Resolve pending seekPoint
@@ -594,6 +605,22 @@ class TransmuxingController {
             // else: use original DTS (keyframe.milliseconds)
 
             this._emitter.emit(TransmuxingEvents.RECOMMEND_SEEKPOINT, seekpoint);
+        }
+    }
+
+    _dispatchPendingSEI(timestamp_base = this._remuxer.getTimestampBase()) {
+        if (timestamp_base == undefined || !this._pendingSEI.length) {
+            return;
+        }
+
+        while (this._pendingSEI.length) {
+            let sei_data = this._pendingSEI.shift();
+
+            if (sei_data.pts != undefined) {
+                sei_data.pts -= timestamp_base;
+            }
+
+            this._emitter.emit(TransmuxingEvents.SEI_ARRIVED, sei_data);
         }
     }
 
