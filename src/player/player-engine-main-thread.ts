@@ -365,7 +365,7 @@ class PlayerEngineMainThread implements PlayerEngine {
 
     private _onMSEBufferFull(): void {
         Log.v(this.TAG, 'MSE SourceBuffer is full, suspend transmuxing task');
-        this._loading_controller.suspendTransmuxer();
+        this._loading_controller.suspendTransmuxer(true);
     }
 
     private _onMSEError(info: any): void {
